@@ -47,32 +47,24 @@
   (read-characters (curry char=? #\")))
 
 (define (cli-print sexp path)
-  ; (displayrn path)
   (display-with-focus sexp path)
-  (displayrn)
-  ; (displayrn)
-  )
+  (displayrn))
+
+(define (cli-print-sexps sexps current)
+  (displayrn (format "~A/~A" (+ current 1) (length sexps)))
+  (for ((sexp sexps) (i (in-naturals)))
+    (emphasize (= i current) (display " ") (displayrn sexp))))
 
 (define cli
-  (ui read-char cli-print
+  (ui read-char
+      cli-print cli-print-sexps
       read-symbol read-number read-string
       (thunk (system stty-sane) (exit))))
 
 
-(define current-file (make-parameter "output.scm"))
-
-(define (write-to-file sexp path ui)
-  (with-output-to-file (current-file)
-    (lambda () (displayrn sexp))
-    #:exists 'append)
-  (displayrn (file->string (current-file)))
-  (values sexp path))
-
-(define keybinds (hash-set default-keybinds #\W write-to-file))
-
 (define (main)
   (system stty-echo-off)
-  (editor cli keybinds)
+  (editor cli)
   (system stty-sane))
 
 (main)

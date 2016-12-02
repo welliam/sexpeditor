@@ -1,6 +1,6 @@
 #lang racket
 
-(provide display-with-focus)
+(provide display-with-focus emphasize)
 
 (define term-red "\033[91m")
 (define term-reset "\033[0m")
@@ -26,15 +26,18 @@
         (display-focused-sexp sexp focus traversal-path))
       (display ")")))))
 
+(define-syntax-rule (emphasize p body ...)
+  (let ()
+    (when p (display term-red))
+    (define res (begin body ...))
+    (when p (display term-reset))
+    res))
+
 (define (display-focused-sexp sexp focus path)
-  (define path-matched (equal? path focus))
-  (when path-matched
-    (display term-red))
-  (cond
-   ((pair? sexp) (display-pairs sexp focus path))
-   (else (write sexp)))
-  (when path-matched
-    (display term-reset)))
+  (emphasize (equal? path focus)
+    (cond
+     ((pair? sexp) (display-pairs sexp focus path))
+     (else (write sexp)))))
 
 (define (display-with-focus sexp focus)
   (display-focused-sexp sexp focus '()))
