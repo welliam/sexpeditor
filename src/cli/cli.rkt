@@ -1,6 +1,6 @@
 #lang racket
 
-(require "editor.rkt" "printer.rkt")
+(require "../editor.rkt" "printer.rkt")
 
 (define stty-sane "stty sane")
 (define stty-echo-on "stty echo")
@@ -60,7 +60,6 @@
       cli-print cli-print-sexps
       read-symbol read-number read-string
       (thunk (system stty-sane) (exit))))
-
 
 (define (main)
   (system stty-echo-off)
