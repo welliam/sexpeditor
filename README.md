@@ -20,6 +20,11 @@ Move the focus to the car of the sexp with `a` or the cdr with `d`.
 Move upwards to the containing sexp with `u`.
 Move to the next sexp with space or `>`, or the previous with `<`.
 Widen the focus by one step with `^`.
+If trying to move to a position that doesn't exist, make it exist. For
+example, using `a` while focused on an atom replaces the previous
+focused region A with (() . A) and focuses on the car of it for
+editing. Using d in this works similarly for the cdr. > when on the
+last item of a list appends a null onto the list and focuses on it.
 
 ### Pairs
 Cons the focus onto null with `l` (listify), or cons it to itself with
@@ -54,3 +59,4 @@ Quit with `q`.
 * File reading
 * Robustness (wrap the program in an exception handler to ensure stty
   sane gets run)
+* Pretty print sexps instead of slamming them all on one line
