@@ -19,32 +19,45 @@
             '()
             (cddr path))))
 
-(define (traverse f sexp path)
-  (let loop ((sexp sexp) (path (reverse path)))
+(define (follow-path/update f sexp path)
+  ;; returns multiple values: the focused sexp, and the whole sexp
+  ;; with f applied to the focused area
+  (let loop ((sexp sexp) (path (reverse path)) (todo '()))
     (cond
-     ((null? path) (f sexp))
+     ((null? path)
+      (values sexp (foldl (lambda (f x) (f x)) (f sexp) todo)))
      ((eq? (car path) 'car)
-      (cons (loop (car sexp) (cdr path))
-            (cdr sexp)))
+      (loop (car sexp)
+            (cdr path)
+            (cons (lambda (x) (cons x (cdr sexp))) todo)))
      ((eq? (car path) 'cdr)
-      (cons (car sexp)
-            (loop (cdr sexp) (cdr path))))
+      (loop (cdr sexp)
+            (cdr path)
+            (cons (lambda (x) (cons (car sexp) x)) todo)))
      (else (error "unknown direction in path" (car path))))))
 
+(define (follow-path sexp path)
+  (define-values (result _) (follow-path/update identity sexp path))
+  result)
+
+(define (update f sexp path)
+  (define-values (_ result) (follow-path/update f sexp path))
+  result)
+
 (define (change sexp path to)
-  (traverse (lambda (sexp) to) sexp path))
+  (update (lambda (sexp) to) sexp path))
 
 (define (lift-car sexp path)
-  (traverse (lambda (s) (if (pair? s) (car s) s)) sexp path))
+  (update (lambda (s) (if (pair? s) (car s) s)) sexp path))
 
 (define (lift-cdr sexp path)
-  (traverse (lambda (s) (if (pair? s) (cdr s) s)) sexp path))
+  (update (lambda (s) (if (pair? s) (cdr s) s)) sexp path))
 
 (define (listify sexp path)
-  (traverse list sexp path))
+  (update list sexp path))
 
 (define (consify sexp path)
-  (traverse (lambda (s) (cons s s)) sexp path))
+  (update (lambda (s) (cons s s)) sexp path))
 
 (define (fix-sexp sexp path)
   (let loop ((sexp sexp) (path (reverse path)))
