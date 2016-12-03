@@ -17,6 +17,9 @@
       (cons (apply f (car t)) (cdr t))
       (cons (car t) (update-list-index f (cdr t) (- i 1)))))
 
+(define (current-buffer st)
+  (list-ref (state-buffers st) (state-buffer-index st)))
+
 (define (update-current-buffer st f)
   (struct-copy state st
     (buffers (update-list-index
@@ -25,12 +28,10 @@
               (state-buffer-index st)))))
 
 (define (update-sexp st f)
-  (define (update sexp path) (list (f sexp path) path))
-  (update-current-buffer st update))
+  (update-current-buffer st (lambda (s p) (list (f s p) p))))
 
 (define (update-path st f)
-  (define (update sexp path) (list sexp (f path)))
-  (update-current-buffer st update))
+  (update-current-buffer st (lambda (s p) (list s (f p)))))
 
 (define (update-buffer-index st f)
   (struct-copy state st
@@ -75,7 +76,6 @@
                (buffer-index (- (length buffers) 1))))
 
 (define (delete-buffer-keybind st ui)
-  ;; fixme
   (define buffers
     (call-with-values
         (thunk (split-at (state-buffers st) (state-buffer-index st)))
@@ -95,6 +95,20 @@
                 (state-buffers st)))
     #:exists 'replace)
   st)
+
+(define (yank-keybind st ui)
+  (match-define (list sexp path) (current-buffer st))
+  (struct-copy state st
+               (clipboard (follow-path sexp path))))
+
+(define (put-keybind st ui)
+  (update-sexp st (curryr change (state-clipboard st))))
+
+(define (yp-swap-keybind st ui)
+  (update-sexp (yank-keybind st ui) (curryr change (state-clipboard st))))
+
+(define (jump-to-nth-keybind n)
+  (update-path-keybind (curryr path-jump-to-nth n)))
 
 (define default-keybinds
   (hash #\s (read-constant-keybind ui-read-symbol)
@@ -120,10 +134,20 @@
              (lambda (path) (if (null? path) '() (cdr path))))
         #\q (lambda (st ui) ((ui-exit ui)))
         #\W write-to-file-keybind
-        ; , yank
-        ; . put
-        ; / swap
-        ))
+        #\, yank-keybind
+        #\. put-keybind
+        #\/ yp-swap-keybind
+
+        #\0 (jump-to-nth-keybind 0)
+        #\1 (jump-to-nth-keybind 1)
+        #\2 (jump-to-nth-keybind 2)
+        #\3 (jump-to-nth-keybind 3)
+        #\4 (jump-to-nth-keybind 4)
+        #\5 (jump-to-nth-keybind 5)
+        #\6 (jump-to-nth-keybind 6)
+        #\7 (jump-to-nth-keybind 7)
+        #\8 (jump-to-nth-keybind 8)
+        #\9 (jump-to-nth-keybind 9)))
 
 (define (do-input st input ui keybinds)
   (define search (hash-ref keybinds input #f))
@@ -139,7 +163,6 @@
 
 (define (editor ui (keybinds default-keybinds))
   (let loop ((st (default-state)))
-    (apply (ui-print ui)
-           (list-ref (state-buffers st) (state-buffer-index st)))
+    (apply (ui-print ui) (current-buffer st))
     (loop
      (do-input/fix-sexp st ((ui-read-char ui)) ui keybinds))))

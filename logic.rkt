@@ -11,13 +11,18 @@
              (curry eq? 'cdr))))
 
 (define (path-next path)
-  (list* 'car 'cdr (cdr path)))
+  (if (null? path)
+      path
+      (list* 'car 'cdr (cdr path))))
 
 (define (path-previous path)
   (cons 'car
         (if (or (null? path) (null? (cdr path)))
             '()
             (cddr path))))
+
+(define (path-jump-to-nth path n)
+  (append (cons 'car (make-list n 'cdr)) (path-up path)))
 
 (define (follow-path/update f sexp path)
   ;; returns multiple values: the focused sexp, and the whole sexp
