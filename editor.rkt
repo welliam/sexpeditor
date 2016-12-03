@@ -107,6 +107,7 @@
         #\D (update-sexp-keybind lift-cdr)
         #\a (update-path-keybind (curry cons 'car))
         #\d (update-path-keybind (curry cons 'cdr))
+        #\space (update-path-keybind path-next)
         #\> (update-path-keybind path-next)
         #\< (update-path-keybind path-previous)
         #\u (update-path-keybind path-up)
