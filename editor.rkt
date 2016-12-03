@@ -10,7 +10,7 @@
   (read-char print print-sexps read-symbol read-number read-string exit)
   #:transparent)
 
-(struct state (buffers buffer-index) #:transparent)
+(struct state (buffers buffer-index clipboard) #:transparent)
 
 (define (update-list-index f t i)
   (if (zero? i)
@@ -74,8 +74,12 @@
                (buffers buffers)
                (buffer-index (- (length buffers) 1))))
 
-(define (delete-newest-buffer-keybind st ui)
-  (define buffers (drop-right (state-buffers st) 1))
+(define (delete-buffer-keybind st ui)
+  ;; fixme
+  (define buffers
+    (call-with-values
+        (thunk (split-at (state-buffers st) (state-buffer-index st)))
+      (lambda (a b) (append a (cdr b)))))
   (if (null? buffers)
       st
       (struct-copy state st
@@ -87,7 +91,7 @@
   (with-output-to-file (current-file)
     (lambda ()
       (for-each (lambda (buffer)
-                  (displayln (car buffer)) (newline))
+                  (writeln (car buffer)) (newline))
                 (state-buffers st)))
     #:exists 'replace)
   st)
@@ -110,11 +114,15 @@
         #\= next-buffer-keybind
         #\- previous-buffer-keybind
         #\+ append-new-buffer-keybind
-        #\_ delete-newest-buffer-keybind
+        #\_ delete-buffer-keybind
         #\^ (update-path-keybind
              (lambda (path) (if (null? path) '() (cdr path))))
         #\q (lambda (st ui) ((ui-exit ui)))
-        #\W write-to-file-keybind))
+        #\W write-to-file-keybind
+        ; , yank
+        ; . put
+        ; / swap
+        ))
 
 (define (do-input st input ui keybinds)
   (define search (hash-ref keybinds input #f))
@@ -126,7 +134,7 @@
 
 (define (default-buffer) (list '() '()))
 
-(define (default-state) (state (list (default-buffer)) 0))
+(define (default-state) (state (list (default-buffer)) 0 '()))
 
 (define (editor ui (keybinds default-keybinds))
   (let loop ((st (default-state)))
