@@ -53,7 +53,7 @@
 (define (cli-print-sexps sexps current)
   (displayrn (format "~A/~A" (+ current 1) (length sexps)))
   (for ((sexp sexps) (i (in-naturals)))
-    (emphasize (= i current) (display " ") (displayrn sexp))))
+    (emphasize (= i current) (display "   ") (displayrn sexp))))
 
 (define cli
   (ui read-char
